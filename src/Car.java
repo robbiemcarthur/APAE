@@ -2,14 +2,12 @@ import java.util.ArrayList;
 
 public class Car extends Vehicle {
 
-	private int regNum, check; // make so can't duplicate
+	private int regNum; // make so can't duplicate
 	private String type, icon;
-	private ArrayList<Integer> carList;
 
 	public Car() {
 		type = "";
 		icon = "";
-		check = 0;
 		regNum = 0;
 	}
 

@@ -1,13 +1,15 @@
 
-public abstract class TrafficController {
-	private int speedLimit;
-	private int maxTraffic;
-	private int trafficCount;
+public class TrafficController {
+	private int speedLimit, maxTraffic, traffic;
+	boolean trafficCheck;
+	Grid grid;
 	
 	public TrafficController() {
+//		grid = g;
 		speedLimit = 0;
 		maxTraffic = 0;
-		trafficCount = 0;
+		traffic = 0;
+		trafficCheck = false;
 	}
 	
 	public void setSpeedLimit(int s) {
@@ -18,8 +20,8 @@ public abstract class TrafficController {
 		maxTraffic = mTraffic;
 	}
 	
-	public void setTrafficCount(int traffic) {
-		trafficCount = traffic;
+	public void setTraffic(int t) {
+		traffic = t;
 	}
 	
 	public int getSpeedLimit() {
@@ -30,7 +32,20 @@ public abstract class TrafficController {
 		return maxTraffic;
 	}
 	
-	public int getTrafficCount() {
-		return trafficCount;
+	public int getTraffic() {
+		return traffic;
+	}
+	
+	public boolean checkTrafficOK() {
+//		traffic = grid.TrafficOnGrid();
+		if (traffic>=maxTraffic)
+		{
+			trafficCheck = false;
+		}
+		else 
+			{
+			trafficCheck = true;
+			}
+		return trafficCheck;
 	}
 }

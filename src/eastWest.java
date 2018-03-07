@@ -1,14 +1,14 @@
 import java.util.Random;
 
 public class eastWest extends Car {
-	private String icon;
 	private Random rand = new Random();
 	private int speed, start, end;
-	private final int[] SPEEDS = {200, 500, 1000, 2000};
+	private final int DEFAULT_SPEED = 2;
+	private String icon;
 
 	public eastWest() {
 		rand = new Random();
-		speed = 0;
+		speed = DEFAULT_SPEED;
 		start = 0;
 		end = 0;
 		icon = "-|";
@@ -31,15 +31,14 @@ public class eastWest extends Car {
 	}
 	
 	public void setEnd() {
-		end = 19;
+		end = 20;
 	}
 	public int getEnd() {
 		return end;
 	}
 	
-	public void setSpeed() {
-		speed = rand.nextInt(3);
-		speed = SPEEDS[speed];
+	public void setRandomSpeed() {
+		speed = rand.nextInt(4);
 	}
 	
 	public int getSpeed() {

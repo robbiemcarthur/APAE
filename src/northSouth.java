@@ -3,12 +3,12 @@ import java.util.Random;
 public class northSouth extends Car {
 	private Random rand = new Random();
 	private int speed, start, end;
-	private final int[] SPEEDS = {200, 500, 1000, 2000};
+	private final int DEFAULT_SPEED = 2;
 	private String icon;
 
 	public northSouth() {
 		rand = new Random();
-		speed = 0;
+		speed = DEFAULT_SPEED;
 		start = 0;
 		end = 0;
 		icon = "O|";
@@ -31,16 +31,15 @@ public class northSouth extends Car {
 	}
 	
 	public void setEnd() {
-		end = 9;
+		end = 10;
 	}
 	
 	public int getEnd() {
 		return end;
 	}
 	
-	public void setSpeed() {
-		speed = rand.nextInt(3);
-		speed = SPEEDS[speed];
+	public void setRandomSpeed() {
+		speed = rand.nextInt(4);
 	}
 	
 	public int getSpeed() {

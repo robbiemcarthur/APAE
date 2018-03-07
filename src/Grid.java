@@ -1,4 +1,3 @@
-import java.util.ArrayList;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -7,28 +6,32 @@ public class Grid implements Runnable {
 	private String[][] grid;
 	private String cell, vehicle;
 	private final String divider = "-";
-	private int startPos, endPos, current, r, c, traffic;
+	private int startPos, endPos, current, rows, columns, traffic;
 	private boolean stop, occupied;
+	private ReentrantLock trafficLock;
+	private Condition notOccupied;
 
-	public Grid(int rows, int columns) {
+	public Grid(int r, int c) {
+		rows = r;
+		columns = c;
 		grid = new String [rows][columns];
-		r = rows;
-		c = columns;
-		cell = "";
+		cell = " |";
 		vehicle = "";
 		startPos = 0;
 		endPos = 0;
 		current = 0;
 		stop = false;
 		occupied = false;
+		setGrid(rows, columns);
+		trafficLock = new ReentrantLock();
+		notOccupied = trafficLock.newCondition();
 	}
 
 	// must be called before checkOccupied so cell has correct val assigned
-	public void setGrid() {
-		cell = " |";
-		for (int i = 0; i < r; i++)
+	public void setGrid(int r, int c) {
+		for (int i = 0; i < rows; i++)
 		{
-			for (int j = 0; j < c; j++)
+			for (int j = 0; j < columns; j++)
 			{
 				grid[i][j] = cell;
 			}
@@ -39,85 +42,130 @@ public class Grid implements Runnable {
 		return grid;
 	}
 
-	public String resetCell() {
-		cell = " |";
-		return cell;
+	public void setCell(String s)
+	{
+		cell = s;
+	}
+	public String getCell() {;
+	return cell;
+	}
+
+	public void setVehicleImage(String v) {
+		vehicle = v+"|";
+	}
+
+	public String getVehicleImage() {
+		return vehicle;
 	}
 
 	public boolean checkOccupied(int a, int b) {
-		occupied = false;
-		if (!grid[a][b].equals(cell))
-		{
-			occupied = true;
+		synchronized(this) {
+			notOccupied.signalAll();;
+			occupied = false;
+			if (!grid[a][b].equals(cell))
+			{
+				occupied = true;
+				trafficLock.lock();
+				try {
+					notOccupied.await();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} finally {
+					trafficLock.unlock();
+				}
+			}
+			return occupied;
 		}
-		return occupied;
 	}
 
-
-
-	public void addEW(eastWest ew) {
+	public synchronized void driveEW(eastWest ew) {
 		vehicle =ew.getIcon();
 		ew.setStart();
 		startPos = ew.getStart();
-		current = 0;
+		ew.setEnd();
 		endPos = ew.getEnd();
-		if (current==endPos)
+
+		for(current = 0;current<endPos+1;current++)
 		{
-			grid[startPos][current] = this.resetCell();
-		}
-		else
-		{
-			if (current<endPos)
-			{
+			try {
+				Thread.sleep(200);
+				trafficLock.notifyAll();
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			if(current!=endPos)
 				checkOccupied(startPos, current);
-				try
+			try
+			{
+				grid[startPos][current] = vehicle;
+				if (grid[startPos][current-1].equals(vehicle) || grid[startPos][current-1].equals("-|"))
 				{
-					grid[startPos][current] = vehicle;
-					if (grid[startPos][current-1].equals(vehicle) || grid[startPos][current-1].equals("-|"))
-					{
-						grid[startPos][current-1] = this.resetCell();
-					}
-				}
-				catch(ArrayIndexOutOfBoundsException e)
-				{
+					grid[startPos][current-1] = this.getCell();
 				}
 			}
+			catch(ArrayIndexOutOfBoundsException e)
+			{
+			}
 		}
+		grid[startPos][endPos-1] = this.getCell();
 	}
 
-	public void addNS(northSouth ns) {
+
+
+
+	public synchronized void driveNS(northSouth ns) {
 		vehicle = ns.getIcon();
+		ns.setStart();
 		startPos = ns.getStart();
 		current = 0;
+		ns.setEnd();
 		endPos = ns.getEnd();
-		if (current==endPos)
+		for(current = 0;current<endPos+1;current++)
 		{
-			grid[current][startPos] = this.resetCell();
-		}
-		else
-		{
-			if (current<endPos)
+			try {
+				Thread.sleep(200);
+			} catch (InterruptedException e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+			if (current!=endPos)
+				checkOccupied(current, startPos);
+			while(occupied)
 			{
 				checkOccupied(current, startPos);
-				try
-				{
-					grid[current][startPos] = vehicle;
-					if (grid[current-1][startPos].equals(vehicle) || grid[startPos][current-1].equals("-|"))
-					{
-						grid[current-1][startPos] = this.resetCell();
-					}
-				}
-				catch(ArrayIndexOutOfBoundsException e)
-				{
+				trafficLock.lock();
+				try {
+					notOccupied.await();
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} finally {
+					trafficLock.unlock();
 				}
 			}
+			try
+			{
+				grid[current][startPos] = vehicle;
+				if (grid[current-1][startPos].equals(vehicle) || grid[startPos][current-1].equals("-|"))
+				{
+					grid[current-1][startPos] = this.getCell();
+				}
+			}
+			catch(ArrayIndexOutOfBoundsException e)
+			{
+				continue;
+			}
 		}
+		grid[endPos-1][startPos] = this.getCell();
 	}
 
+
 	public int TrafficOnGrid () {
-		for (int i = 0; i < r; i++)
+		for (int i = 0; i < rows; i++)
 		{
-			for (int j = 0; j < c; j++)
+			for (int j = 0; j < columns; j++)
 			{
 				if (grid[i][j].equals(cell))
 				{
@@ -134,7 +182,7 @@ public class Grid implements Runnable {
 
 
 	public void drawDivide() {
-		for (int i = 0; i < (c*2+1); i++)
+		for (int i = 0; i < (columns*2+1); i++)
 		{
 			System.out.print(divider);
 		}
@@ -145,12 +193,12 @@ public class Grid implements Runnable {
 		synchronized(this) {
 			System.out.print("\n");
 			this.drawDivide();
-			for (int l = 0; l < r; l++)
+			for (int l = 0; l < rows; l++)
 			{
 				System.out.print("\n|");
 				try
 				{
-					for (int j = 0; j < c; j++)
+					for (int j = 0; j < columns; j++)
 					{
 						System.out.print(grid[l][j]);
 					}
@@ -165,12 +213,13 @@ public class Grid implements Runnable {
 		}
 	}
 
+	@Override
 	public void run() {
 		// TODO Auto-generated method stub
 		while(!stop)
 		{
+			drawGrid(2000);
 			try {
-				drawGrid(2000);
 				Thread.currentThread().sleep(200);
 			} catch (InterruptedException e) {
 				// TODO Auto-generated catch block
